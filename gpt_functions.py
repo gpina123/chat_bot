@@ -19,7 +19,7 @@ df_clean_2019["Date"]=pd.to_datetime(df_clean_2019["Date"],format="%Y-%m-%d %H:%
 df_clean_2019=df_clean_2019.set_index('Date', drop=True)
 
 
-def update_graph(selected_options,start_date,end_date,type_graph):
+def plot_graph(selected_options,start_date,end_date,type_graph):
     
     start_date=pd.to_datetime(start_date)
     end_date=pd.to_datetime(end_date)
@@ -62,7 +62,7 @@ def update_graph(selected_options,start_date,end_date,type_graph):
 
         fig.write_html("boxplot_plot.html")
         
-        return "Your boxplot graph is completed"
+        return "Your boxplot graph is completed."
         
         
     elif "histogram" in type_graph:
@@ -78,4 +78,4 @@ def update_graph(selected_options,start_date,end_date,type_graph):
         fig = go.Figure(data=[histogram_trace], layout=layout)
 
         fig.write_html("histogram_plot.html")
-        return "Your histogram graph is completed"
+        return "Your histogram graph is completed."

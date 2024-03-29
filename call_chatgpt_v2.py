@@ -16,31 +16,11 @@ GPT_MODEL = "gpt-3.5-turbo-0613"
 
 client = OpenAI()
 
-def parse_function_response(message):
-    print("before_parse_function")
-    function_call = message["function_call"]
-    function_name = function_call["name"]
-
-    print("parse_function")
-    print("GPT: Called function " + function_name )
-
-    try:
-        arguments = json.loads(function_call["arguments"])
-
-        if hasattr(gpt_functions, function_name):
-            function_response = getattr(gpt_functions, function_name)(**arguments)
-        else:
-            function_response = "ERROR: Called unknown function"
-    except:
-        function_response = "ERROR: Invalid arguments"
-
-    return (function_name, function_response)
-
 tools = [
     {
         "type": "function",
         "function":{
-            "name": "update_graph",
+            "name": "plot_graph",
             "description": "Plot a graph",
             "parameters": {
                 "type": "object",
@@ -48,7 +28,8 @@ tools = [
                     "selected_options": {
                         "type": "string",
                         "description": "The selected options for plotting the graph",
-                        "enum":["Power_kW"]
+                        "enum":["Power_kW","temp_C","HR","windSpeed_m/s","windGust_m/s",
+                                "pres_mbar","solarRad_W/m2","rain_mm/h","rain_day"]
                     },
                     "start_date": {
                         "type": "string",
@@ -72,159 +53,100 @@ tools = [
 
 
 #@retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(3))
-def chat_completion_request(messages, tools=tools,tool_choice=None, model=GPT_MODEL):
-    print("hello aas")
+def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_MODEL):
     try:
         response = client.chat.completions.create(
             model=model,
             messages=messages,
             tools=tools,
-            tool_choice=tool_choice
+            tool_choice=tool_choice,
+            temperature=0
         )
         
-        print("hello")
-        message = response.choices[0].message
-        messages.append(message)
+        # Get the assistant's message from the response
+        assistant_message = response.choices[0].message
         
-        if message.tool_calls:
-            function_call = response.choices[0].message.tool_calls[0].function
-            function_name=function_call.name        
-
-            arguments_json = function_call.arguments
-            arguments_dict = json.loads(arguments_json)
-            print(arguments_dict)
-            
-            try:
-                arguments = json.loads(function_call.arguments)
+        #print(assistant_message)
+        # Append the assistant's message to the list of messages
+        messages.append(assistant_message)
+        
+        # Check if the assistant's message contains tool calls
+        if assistant_message.tool_calls is not None:
+            # Iterate over each tool call made by the assistant
+            for tool_call in assistant_message.tool_calls:
+                # Process each tool call and generate the appropriate tool message
+                tool_call_id = tool_call.id
+                function_name = tool_call.function.name
+                arguments = json.loads(tool_call.function.arguments)
                 
-
+                # Check if the function exists in gpt_functions
                 if hasattr(gpt_functions, function_name):
-                    function=getattr(gpt_functions, function_name)
-                    function_response=function(**arguments)
-                    '''
-                    message = {
-                    "role": "assistant",
-                    "content": f"write something about {function_response}"
-                    }'''
-                    message = {
-                        "role": "function",
-                        "name": function_name,
+                    function = getattr(gpt_functions, function_name)
+                    
+                    try:
+                        function_response = function(**arguments)
+                        
+                        tool_message = {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
                         "content": function_response
                     }
+                    except:
+                        tool_message={
+                            "role":"tool",
+                            "tool_call_id":tool_call_id,
+                            "content":"Invalid arguments!"
+                        }
                 else:
-                    message = {
-                    "role": "assistant",
-                    "content": "tell the user that you don't recognize which function should you call"
+                    # Create a tool message indicating an unknown function
+                    tool_message = {
+                        "role": "assistant",
+                        "tool_call_id": tool_call_id,
+                        "content": "I don't recognize the function you requested."
                     }
-                    
-            except:
-                message = {
-                    "role": "assistant",
-                    "content": "tell the user that the arguments are invalid"
-                    }  
-                print("ERROR: Invalid arguments")
                 
+                #Append the tool message to the list of messages
+                messages.append(tool_message)
+                #print(tool_message)
         else:
-            user_message = input("GPT: " + message["content"] + "\nYou: ")
-            message = {
-                "role": "user",
-                "content": user_message
-            }
-            
-        messages.append(message)
+            tool_message = assistant_message
+            messages.append(tool_message)
         
-        print("before user_message")
-        user_message = input("GPT: " + message["content"] + "\nYou: ")
-        message = {
+        # Prompt the user for input
+        if isinstance(tool_message,dict):
+            user_message = input("GPT: " + tool_message["content"] + "\nYou: ")
+        else:
+            if tool_message.content is not None:
+                user_message = input("GPT: " + tool_message.content + "\nYou: ")
+            else:
+                user_message = input("GPT: " + "content none" + "\nYou: ")
+        # Create a user message with the input
+        user_message = {
             "role": "user",
             "content": user_message
         }
-        print("after_user_message")
-        messages.append(message)
         
-        print("before requesting again")
+        # Append the user message to the list of messages
+        messages.append(user_message)
         
-        chat_completion_request(messages=messages)
+        # Recursively call chat_completion_request with updated messages
+        chat_completion_request(messages, tools=tools, tool_choice=tool_choice, model=model)
     
     except Exception as e:
         print("Unable to generate ChatCompletion response")
         print(f"Exception: {e}")
         return e
-        
-        '''   
-        assistant_message = chat_response.choices[0].message
-        print(assistant_message)
-        function_call = assistant_message.tool_calls[0].function
 
-        # Parse the arguments JSON string
-        arguments_json = function_call.arguments
-        arguments_dict = json.loads(arguments_json)
-        '''
-        '''
-        if "function_call" in function:
-            print("oafkslksks")
-            function_name, function_response = parse_function_response(message)
-
-            message = {
-                "role": "function",
-                "name": function_name,
-                "content": function_response
-            }
-        else:
-            user_message = input("GPT: " + message["content"] + "\nYou: ")
-            message = {
-                "role": "user",
-                "content": user_message
-            }
-
-        chat_completion_request(message, messages)
-        '''
-        
-    except Exception as e:
-        print("Unable to generate ChatCompletion response")
-        print(f"Exception: {e}")
-        return e
-    
         
 messages = []
+messages.append({"role":"system","content":"You are an AI assistant that helps visualizing data."})
 messages.append({"role": "system", "content": "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."})
 #"Please plot a graph of the type histogram for the Power_kW from January 9th, 2019 to December 20th, 2019."
-#user_message="Please plot a graph of the type histogram for the Power consumption from January 5th, 2019 to December 31st, 2019."
-#user_input = input("GPT: Type your input:\n")
-message={"role": "user", "content": "Please plot a graph of the type histogram for the Power consumption from January 5th, 2019 to December 31st, 2019."}
+#"Please plot a graph of the type histogram for the Power consumption from January 5th, 2019 to December 31st, 2019."
+user_input = input("GPT: Type your input."+"\nYou: ")
+message={"role": "user", "content": f"{user_input}"}
 #message ={"role": "user", "content": f"{user_input}"}
 
 messages.append(message)
 
 chat_completion_request(messages,tools=tools)
-
-'''
-assistant_message = chat_response.choices[0].message
-print(assistant_message)
-function_call = assistant_message.tool_calls[0].function
-
-# Parse the arguments JSON string
-arguments_json = function_call.arguments
-arguments_dict = json.loads(arguments_json)
-
-# Access the individual arguments
-selected_options = arguments_dict["selected_options"]
-start_date = arguments_dict["start_date"]
-end_date = arguments_dict["end_date"]
-type_graph = arguments_dict["type_graph"]
-
-start_date=pd.to_datetime(start_date)
-end_date=pd.to_datetime(end_date)
-update_graph(selected_options, start_date, end_date, type_graph)
-'''
-'''
-# Perform chat completion request
-chat_response = chat_completion_request(messages, tools=tools)
-
-# Iterate over the tools in the chat response
-for tool in chat_response.tools:
-    # Access the parameters of the function
-    parameters = tool.function.parameters
-    # Print the parameters
-    print(parameters)
-'''
