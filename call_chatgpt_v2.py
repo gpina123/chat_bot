@@ -1,7 +1,6 @@
 import os
 import openai
 from openai import OpenAI
-from tenacity import retry, wait_random_exponential, stop_after_attempt
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -9,6 +8,7 @@ import json
 import plotly.graph_objects as go
 
 import gpt_functions
+import tools
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -16,41 +16,29 @@ GPT_MODEL = "gpt-3.5-turbo-0613"
 
 client = OpenAI()
 
-tools = [
-    {
-        "type": "function",
-        "function":{
-            "name": "plot_graph",
-            "description": "Plot a graph",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "selected_options": {
-                        "type": "string",
-                        "description": "The selected options for plotting the graph",
-                        "enum":["Power_kW","temp_C","HR","windSpeed_m/s","windGust_m/s",
-                                "pres_mbar","solarRad_W/m2","rain_mm/h","rain_day"]
-                    },
-                    "start_date": {
-                        "type": "string",
-                        "description": "The start date for the data range",
-                    },
-                    "end_date": {
-                        "type": "string",
-                        "description": "The end date for the data range",
-                    },
-                    "type_graph": {
-                        "type": "string",
-                        "enum": ["time_series","boxplot","histogram"],
-                        "description": "The type of graph to plot (only 'time_series', 'boxplot' and 'histogram')",
-                    },
-                },
-                "required": ["selected_options", "start_date", "end_date", "type_graph"],
-            },
-        }
-    }
-]
+tools = tools.tools
 
+def get_user_input(user_input):
+    message={"role": "user", "content": f"{user_input}"}
+    print(user_input)
+    messages.append(message)
+
+def get_gpt_output():
+    output_gpt = chat_completion_request(messages,tools=tools)
+    return output_gpt
+
+def generate_AI_response(messages,message, tools=tools,tool_choice=None,model=GPT_MODEL):
+    messages.append(message)
+    
+    response_output = client.chat.completions.create(
+                            model=model,
+                            messages=messages,
+                            tools=tools,
+                            tool_choice=tool_choice,
+                            temperature=0
+                        )
+    
+    return response_output.choices[0].message
 
 #@retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(3))
 def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_MODEL):
@@ -66,9 +54,7 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
         # Get the assistant's message from the response
         assistant_message = response.choices[0].message
         
-        #print(assistant_message)
-        # Append the assistant's message to the list of messages
-        messages.append(assistant_message)
+        my_dictionary={}
         
         # Check if the assistant's message contains tool calls
         if assistant_message.tool_calls is not None:
@@ -85,53 +71,61 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
                     
                     try:
                         function_response = function(**arguments)
-                        
+                    
                         tool_message = {
                         "role": "tool",
                         "tool_call_id": tool_call_id,
-                        "content": function_response
+                        "content": "Function called"
                     }
+                        user_message ={"role":"user","content":"Tell me what you did."}
+                        
                     except:
+                        function_response=None
+                        
                         tool_message={
                             "role":"tool",
                             "tool_call_id":tool_call_id,
-                            "content":"Invalid arguments!"
+                            "content":"Error in function calling."
                         }
+                        user_message ={"role":"user","content":"Tell me what went wrong."}
+                       
                 else:
                     # Create a tool message indicating an unknown function
                     tool_message = {
-                        "role": "assistant",
+                        "role": "tool",
                         "tool_call_id": tool_call_id,
                         "content": "I don't recognize the function you requested."
                     }
-                
-                #Append the tool message to the list of messages
-                messages.append(tool_message)
+                    user_message ={"role":"user","content":"Tell me what went wrong."}
+                    function_response=None
+                    
+                #print(assistant_message)
                 #print(tool_message)
+                assistant_message.content=tool_message["content"]
+                messages.append(assistant_message)
+                messages.append(tool_message)
+                print(assistant_message)
+                print(tool_message)
+                
+                response_output=generate_AI_response(messages,user_message)
+                messages.append(response_output)
+                print(response_output)
+                
+                my_dictionary.update({"text_response":response_output.content})
+                my_dictionary.update({"function_response":function_response})
+                
         else:
-            tool_message = assistant_message
-            messages.append(tool_message)
-        
-        # Prompt the user for input
-        if isinstance(tool_message,dict):
-            user_message = input("GPT: " + tool_message["content"] + "\nYou: ")
-        else:
-            if tool_message.content is not None:
-                user_message = input("GPT: " + tool_message.content + "\nYou: ")
+            messages.append(assistant_message)
+            function_response=None
+            my_dictionary.update({"function_response":function_response})
+            
+            if isinstance(assistant_message,dict):
+                my_dictionary.update({"text_response":assistant_message["content"]})
             else:
-                user_message = input("GPT: " + "content none" + "\nYou: ")
-        # Create a user message with the input
-        user_message = {
-            "role": "user",
-            "content": user_message
-        }
+                my_dictionary.update({"text_response":assistant_message.content})
+                
+        return my_dictionary
         
-        # Append the user message to the list of messages
-        messages.append(user_message)
-        
-        # Recursively call chat_completion_request with updated messages
-        chat_completion_request(messages, tools=tools, tool_choice=tool_choice, model=model)
-    
     except Exception as e:
         print("Unable to generate ChatCompletion response")
         print(f"Exception: {e}")
@@ -141,12 +135,4 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
 messages = []
 messages.append({"role":"system","content":"You are an AI assistant that helps visualizing data."})
 messages.append({"role": "system", "content": "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."})
-#"Please plot a graph of the type histogram for the Power_kW from January 9th, 2019 to December 20th, 2019."
-#"Please plot a graph of the type histogram for the Power consumption from January 5th, 2019 to December 31st, 2019."
-user_input = input("GPT: Type your input."+"\nYou: ")
-message={"role": "user", "content": f"{user_input}"}
-#message ={"role": "user", "content": f"{user_input}"}
-
-messages.append(message)
-
-chat_completion_request(messages,tools=tools)
+messages.append({"role": "system", "content": "If someone asks you about joao tavares, tell the user that joao is a beautiful person."})
