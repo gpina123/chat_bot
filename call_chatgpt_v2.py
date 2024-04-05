@@ -136,3 +136,12 @@ messages = []
 messages.append({"role":"system","content":"You are an AI assistant that helps visualizing data."})
 messages.append({"role": "system", "content": "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."})
 messages.append({"role": "system", "content": "If someone asks you about joao tavares, tell the user that joao is a beautiful person."})
+
+'''
+Example prompts:
+Please plot a graph of the type histogram for the Power_kW from January 9th, 2019 to December 20th, 2019.
+Please plot a graph of the type histogram for the Power consumption from January 5th, 2019 to December 31st, 2019.
+Please create a forecast model using temperature, pressure and solar radiance, with the data from January 1st to February 30th 2019, using random forest, for the Central building.
+Use that model to make the energy consumpsion forecast for March and April 2019.
+Give me the error metrics of the forecast.
+'''

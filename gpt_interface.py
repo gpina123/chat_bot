@@ -70,6 +70,9 @@ def update_output(n_clicks, value):
         if function_response is None:
             # Convert the figure to a dictionary
             display = html.Div(f'{output["text_response"]}')
+        elif isinstance(function_response,str):
+            display = html.Div([html.Div(f'{output["text_response"]}'),
+                                html.Div(f'{function_response}')])
         else:
             display = html.Div([html.Div(f'{output["text_response"]}'),
                                 dcc.Graph(figure=function_response)])

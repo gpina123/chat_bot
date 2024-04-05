@@ -284,8 +284,6 @@ def create_regression_model(selected_features,start_date,end_date,type_model = "
     cvRMSE=RMSE/np.mean(y_test)
     NMBE=MBE/np.mean(y_test)
 
-    return fig1
-
 ##############################################################################################
 
 def forecast(start_date,end_date):
@@ -323,7 +321,7 @@ def forecast(start_date,end_date):
         cvRMSE_=RMSE_/np.mean(Y)
         NMBE_=MBE_/np.mean(Y)
 
-        return "The energy consumpsion forecast is ready!"
+        return "The energy consumption forecast is ready!"
     
     else:
         return "Please, start by creating a model."
@@ -336,9 +334,11 @@ def model_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE','
 
         if selected_plot == 'time_series':
             fig1.write_html("model_time_series.html")
+            return fig1
 
         elif selected_plot == 'scater_plot':
             fig2.write_html("model_scatter.html")
+            return fig2
 
         elif selected_plot == 'table':
             metrics_values1 = []
@@ -373,9 +373,7 @@ def model_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE','
             ])
 
             table_figure.write_html("model_table.html")
-
-        return 'The plot is ready!'
-    
+            return table_figure
     else:
         return "Please, start by creating a model."
 
@@ -387,9 +385,11 @@ def forecast_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE
 
         if selected_plot == 'time_series':
             fig1_.write_html("forecast_time_series.html")
+            return fig1_,fig1_
 
         elif selected_plot == 'scater_plot':
             fig2_.write_html("forecast_scatter.html")
+            return fig2_
 
         elif selected_plot == 'table':
             metrics_values1 = []
@@ -424,8 +424,7 @@ def forecast_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE
             ])
 
             table_figure.write_html("forecast_table.html")
-
-        return table_figure
+            return table_figure
     
     else:
         return "Please, start by using the forecast model."
