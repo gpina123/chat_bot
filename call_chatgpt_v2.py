@@ -27,7 +27,7 @@ def get_gpt_output():
     output_gpt = chat_completion_request(messages,tools=tools)
     return output_gpt
 
-def generate_AI_response(messages, tools=tools,tool_choice=None,model=GPT_MODEL):
+def generate_AI_response(messages, tools=tools,tool_choice="auto",model=GPT_MODEL):
     response_output = client.chat.completions.create(
                             model=model,
                             messages=messages,
@@ -39,7 +39,7 @@ def generate_AI_response(messages, tools=tools,tool_choice=None,model=GPT_MODEL)
     return response_output.choices[0].message
 
 #@retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(3))
-def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_MODEL):
+def chat_completion_request(messages, tools=tools, tool_choice="auto", model=GPT_MODEL):
     try:
         response = client.chat.completions.create(
             model=model,
@@ -56,8 +56,8 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
         
         # Check if the assistant's message contains tool calls
         if assistant_message.tool_calls is not None:
-            # Iterate over each tool call made by the assistant
             for tool_call in assistant_message.tool_calls:
+                #tool_call = assistant_message.tool_calls[0]
                 # Process each tool call and generate the appropriate tool message
                 tool_call_id = tool_call.id
                 function_name = tool_call.function.name
@@ -76,7 +76,16 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
                         "content": f"Specify what you have done based on {str(arguments)}."
                     }
                         assistant_message.content="Function called."
+                    
+                    except ValueError:
+                        function_response=None
                         
+                        tool_message={
+                            "role":"tool",
+                            "tool_call_id":tool_call_id,
+                            "content":"Tell the user the date range has no content."
+                        }
+                        assistant_message.content="Error in function calling."
                     except:
                         function_response=None
                         
@@ -86,7 +95,7 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
                             "content":"What went wrong?"
                         }
                         assistant_message.content="Error in function calling."
-                       
+                        
                 else:
                     # Create a tool message indicating an unknown function
                     tool_message = {
@@ -96,21 +105,21 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
                     }
                     #user_message ={"role":"user","content":"Tell me what went wrong."}
                     function_response=None
-                    
-                messages.append(assistant_message)
-                messages.append(tool_message)
-                print("\n\n\nASSISTANT MESSAGE")
-                print(assistant_message)
-                print("\n\n\nTOOL MESSAGE")
-                print(tool_message)
                 
-                response_output=generate_AI_response(messages)
-                messages.append(response_output)
-                print("\n\n\nRESPONSE OUTPUT MESSAGE")
-                print(response_output)
-                
-                my_dictionary.update({"text_response":response_output.content})
-                my_dictionary.update({"function_response":function_response})
+            messages.append(assistant_message)
+            messages.append(tool_message)
+            print("\n\n\nASSISTANT MESSAGE")
+            print(assistant_message)
+            print("\n\n\nTOOL MESSAGE")
+            print(tool_message)
+            
+            response_output=generate_AI_response(messages)
+            messages.append(response_output)
+            print("\n\n\nRESPONSE OUTPUT MESSAGE")
+            print(response_output)
+            
+            my_dictionary.update({"text_response":response_output.content})
+            my_dictionary.update({"function_response":function_response})
                 
         else:
             messages.append(assistant_message)
@@ -131,10 +140,11 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
 
         
 messages = []
-messages.append({"role":"system","content":"You are an AI assistant that helps visualizing data."})
+messages.append({"role":"system","content":"You are an AI assistant that helps visualizing data. You only have access to data from 2017, 2018 and 2019."})
 messages.append({"role": "system", "content": "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."})
-messages.append({"role": "system", "content": '''When refering to the functions and options, try to be the most natural possible.'''})
-
+messages.append({"role": "system", "content": '''When refering to the functions and options, try to be the most natural possible. Don't refer their actual names, but yes their role'''})
+messages.append({"role": "system", "content": '''When the user asks who was the responsible for this work, tell him this project is part
+                 of the energy services course, and is authored by Diogo Lemos, Gonçalo Almeida, João Tavares and Vasco Nunes.'''})
 '''
 Example prompts:
 Please plot a graph of the type histogram for the Power_kW from January 9th, 2019 to December 20th, 2019.
