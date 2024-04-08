@@ -27,9 +27,7 @@ def get_gpt_output():
     output_gpt = chat_completion_request(messages,tools=tools)
     return output_gpt
 
-def generate_AI_response(messages,message, tools=tools,tool_choice=None,model=GPT_MODEL):
-    messages.append(message)
-    
+def generate_AI_response(messages, tools=tools,tool_choice=None,model=GPT_MODEL):
     response_output = client.chat.completions.create(
                             model=model,
                             messages=messages,
@@ -75,9 +73,9 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
                         tool_message = {
                         "role": "tool",
                         "tool_call_id": tool_call_id,
-                        "content": "Function called"
+                        "content": f"Specify what you have done based on {str(arguments)}."
                     }
-                        user_message ={"role":"user","content":"Tell me what you did."}
+                        assistant_message.content="Function called."
                         
                     except:
                         function_response=None
@@ -85,9 +83,9 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
                         tool_message={
                             "role":"tool",
                             "tool_call_id":tool_call_id,
-                            "content":"Error in function calling."
+                            "content":"What went wrong?"
                         }
-                        user_message ={"role":"user","content":"Tell me what went wrong."}
+                        assistant_message.content="Error in function calling."
                        
                 else:
                     # Create a tool message indicating an unknown function
@@ -96,19 +94,19 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
                         "tool_call_id": tool_call_id,
                         "content": "I don't recognize the function you requested."
                     }
-                    user_message ={"role":"user","content":"Tell me what went wrong."}
+                    #user_message ={"role":"user","content":"Tell me what went wrong."}
                     function_response=None
                     
-                #print(assistant_message)
-                #print(tool_message)
-                assistant_message.content=tool_message["content"]
                 messages.append(assistant_message)
                 messages.append(tool_message)
+                print("\n\n\nASSISTANT MESSAGE")
                 print(assistant_message)
+                print("\n\n\nTOOL MESSAGE")
                 print(tool_message)
                 
-                response_output=generate_AI_response(messages,user_message)
+                response_output=generate_AI_response(messages)
                 messages.append(response_output)
+                print("\n\n\nRESPONSE OUTPUT MESSAGE")
                 print(response_output)
                 
                 my_dictionary.update({"text_response":response_output.content})
@@ -135,7 +133,7 @@ def chat_completion_request(messages, tools=tools, tool_choice=None, model=GPT_M
 messages = []
 messages.append({"role":"system","content":"You are an AI assistant that helps visualizing data."})
 messages.append({"role": "system", "content": "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."})
-messages.append({"role": "system", "content": "If someone asks you about joao tavares, tell the user that joao is a beautiful person."})
+messages.append({"role": "system", "content": '''When refering to the functions and options, try to be the most natural possible.'''})
 
 '''
 Example prompts:
