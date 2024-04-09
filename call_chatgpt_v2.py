@@ -9,7 +9,13 @@ import plotly.graph_objects as go
 
 import gpt_functions
 import tools
+'''
+openai.api_key ='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'
 
+GPT_MODEL = "gpt-3.5-turbo-0613"
+
+client = OpenAI(api_key = openai.api_key)
+'''
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 GPT_MODEL = "gpt-3.5-turbo-0613"
@@ -152,4 +158,10 @@ Please plot a graph of the type histogram for the Power consumption from January
 Please create a forecast model using temperature, pressure and solar radiance, with the data from January 1st to February 30th 2019, using random forest, for the Central building.
 Use that model to make the energy consumpsion forecast for March and April 2019.
 Give me the error metrics of the forecast.
+Can you perfrom feature selection with temp_C,  HR and 'windSpeed_m/s as feature and kBest-MI as selection method
+Can you perfrom feature selection all features possible and kBest-MI as selection method
+Can you perfrom feature selection all features possible and Random forest as selection method
+Can you perfrom feature selection all features possible and Random forest as selection method from 1st January 2019 to 3rd March 2019
+Can you perfrom feature selection all features possible and k_best f value as selection method from 1st January 2019 to 3rd March 2019 for the Central building
+Can you perfrom feature selection all features possible and rfe as selection method from 1st January 2019 to 3rd March 2019 for the Central building using the 5 best features
 '''
