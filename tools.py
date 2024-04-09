@@ -3,13 +3,13 @@ tools = [
     "type": "function",
         "function":{
             "name": "plot_graph",
-            "description": "Plot a graph",
+            "description": "Function that allows the user to plot a graph of a given type within a specific date range for the selected features.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "selected_options": {
                         "type": "array",
-                        "description": "The selected options for plotting the graph",
+                        "description": "The selected features for plotting the graph",
                         "items": {
                             "type":'string',
                             "enum":["Power (kW)","Temperature (C)","Humidity (%)",
@@ -34,7 +34,7 @@ tools = [
                     "type_graph": {
                         "type": "string",
                         "enum": ["time_series","boxplot","histogram","table"],
-                        "description": "The type of graph to plot (only 'time_series', 'boxplot', 'histogram' and 'table')",
+                        "description": "The type of graph to plot. Only accept time series, boxplot and histogram. Other options are not available.",
                     },
                     "building": {
                         "type": "string",
