@@ -24,7 +24,7 @@ import gpt_interface
 
 ###############################################################################################################
 
-all_data = pd.read_csv('All_data2.csv')
+all_data = pd.read_csv('All_data4.csv')
 all_data["Date"]=pd.to_datetime(all_data["Date"], format="%Y-%m-%d %H:%M:%S")
 all_data = all_data.set_index(['Building', 'Date'])
 
@@ -161,7 +161,7 @@ def feature_selector(building, selected_features,selection_method,nbest = 3, sta
     mask = (df_select.index >= start_date) & (df_select.index <= end_date)
 
     df_select = df_select[mask]
-    
+
     # Extract the data for plotting
     Y5 = np.array(selected_data.loc[:]['Power (kW)'])
     X5 = np.array(selected_data.loc[:][selected_features])
