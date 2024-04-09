@@ -102,7 +102,7 @@ def chat_completion_request(messages, tools=tools, tool_choice="auto", model=GPT
                             "tool_call_id":tool_call_id,
                             "content":"What went wrong?"
                         }
-                        assistant_message.content="Error in function calling."
+                        assistant_message.content="Error in function calling. If there is an argument missing, warn the user."
                         
                 else:
                     # Create a tool message indicating an unknown function
