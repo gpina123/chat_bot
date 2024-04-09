@@ -46,6 +46,11 @@ def plot_graph(selected_options, start_date, end_date, type_graph, building, num
     
     # Extract the data for plotting
     selected_data = all_data.xs(building).loc[start_date:end_date]
+
+    #check if there is no content
+    if selected_data.shape[0] == 0:
+        raise ValueError("invalid date")
+        
     x_data = selected_data.index
     
     # Filter data based on selected building and options
