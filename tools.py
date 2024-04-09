@@ -12,7 +12,7 @@ tools = [
                         "description": "The selected options for plotting the graph",
                         "items": {
                             "type":'string',
-                            "enum":["Power (kW)","Temperature (C)","Humidity (%)",
+                            "enum":["Power (kW)","Temperature (C)","Humidity (%)","WindSpeed (m/s)",
                                 "Pressure (mbar)","SolarRad (W/m2)","rain (mm/h)", 'Power-1', 'Power-week',
                                 'Week Day', 'Month', 'Holiday', 'Holiday or Weekend', 'Power RM-2H',
                                 'Power RM-4H', 'Temperature RM-2H', 'Temperature RM-4H',
@@ -33,8 +33,8 @@ tools = [
                     },
                     "type_graph": {
                         "type": "string",
-                        "enum": ["time_series","boxplot","histogram"],
-                        "description": "The type of graph to plot (only 'time_series', 'boxplot' and 'histogram')",
+                        "enum": ["time_series","boxplot","histogram","table"],
+                        "description": "The type of graph to plot (only 'time_series', 'boxplot', 'histogram' and 'table')",
                     },
                     "building": {
                         "type": "string",
@@ -69,9 +69,9 @@ tools = [
                         "type": "array",
                         "description": "The selected options for plotting the graph",
                         "items": {
-                            "type":'string',
+                            "type":"string",
                             "enum":['Temperature (C)',
-                                    'Humidity (%)', 'Pressure (mbar)', 'SolarRad (W/m2)',
+                                    'Humidity (%)', 'WindSpeed (m/s)', 'Pressure (mbar)', 'SolarRad (W/m2)',
                                     'rain (mm/h)', 'Power-1', 'Power-week', 'Hour', 'Hour sin', 'Hour cos',
                                     'Week Day', 'Month', 'Holiday', 'Holiday or Weekend', 'Power RM-2H',
                                     'Power RM-4H', 'Temperature RM-2H', 'Temperature RM-4H',
@@ -83,8 +83,12 @@ tools = [
                     },
                      "selection_method": {
                         "type": "string",
-                        "description": "The selection method used",
-                        "enum":["kBest-F-Value", "kBest-MI", "Forest-Regressor"]
+                        "description": "The selection method used. If not provided ask the user for it!",
+                        "enum":["kBest-F-Value", "kBest-MI", "Forest-Regressor","RFE"]
+                    },
+                    "nbest": {
+                        "type": "number",
+                        "description": "The number of best features that will be colored in the plot and classified as Best Features",
                     },
                     "start_date": {
                         "type": "string",
@@ -113,7 +117,7 @@ tools = [
                         "items": {
                             "type": "string",
                             "enum": ['Temperature (C)',
-                                'Humidity (%)', 'Pressure (mbar)', 'SolarRad (W/m2)',
+                                'Humidity (%)', 'WindSpeed (m/s)', 'Pressure (mbar)', 'SolarRad (W/m2)',
                                 'rain (mm/h)', 'Power-1', 'Power-week', 'Hour', 'Hour sin', 'Hour cos',
                                 'Week Day', 'Month', 'Holiday', 'Holiday or Weekend', 'Power RM-2H',
                                 'Power RM-4H', 'Temperature RM-2H', 'Temperature RM-4H',

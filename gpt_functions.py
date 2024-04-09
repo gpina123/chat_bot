@@ -13,6 +13,9 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import BaggingRegressor
+from sklearn.feature_selection import RFE
+from sklearn.linear_model import LinearRegression 
+
 import plotly.express as px
 
 import dash_bootstrap_components as dbc
@@ -101,9 +104,52 @@ def plot_graph(selected_options, start_date, end_date, type_graph, building, num
         fig.write_html("histogram_plot.html")
         return fig
 
+    elif "table" in type_graph:
+        # Initialize header and cell values
+        cell_values = []
+        
+        # Prepare table data for each selected option
+         # Prepare table data for each statistic
+        for statistic in selected_data[selected_options[0]].describe().index:
+            row_data = [statistic]
+            for option in selected_options:
+                stats = selected_data[option].describe()
+                value = round(stats.loc[statistic], 2)  # Round to 2 decimal places
+                row_data.append(value)
+            cell_values.append(row_data)
+        
+        # Transpose the cell_values to separate stats and option values
+        transposed_cell_values = [[row[i] for row in cell_values] for i in range(len(cell_values[0]))]
+        
+        # Create the table trace
+        table_trace = go.Table(header=dict(values=["Statistic"] + selected_options),
+                               cells=dict(values=transposed_cell_values))
+        
+        # Create the layout
+        layout_table = go.Layout(title=dict(text="Statistics Table", x=0.5))
+        
+        # Create the figure with the table trace
+        fig = go.Figure(data=table_trace, layout=layout_table)
+        fig.write_html("statistics_table.html")
+
+        print("Your statistics table is completed.")
+        return fig
+
 ###############################################################################################################
 
-def feature_selector(building, selected_features,selection_method,start_date = '2019-01-10',end_date ='2019-01-30'):
+def feature_selector(building, selected_features,selection_method,nbest = 3, start_date = '2019-01-10',end_date ='2019-01-30'):
+
+    if selected_features == 'all':
+        print('TRUE')
+        selected_features = ['Temperature (C)',
+                                    'Humidity (%)', 'WindSpeed (m/s)', 'Pressure (mbar)', 'SolarRad (W/m2)',
+                                    'rain (mm/h)', 'Power-1', 'Power-week', 'Hour', 'Hour sin', 'Hour cos',
+                                    'Week Day', 'Month', 'Holiday', 'Holiday or Weekend', 'Power RM-2H',
+                                    'Power RM-4H', 'Temperature RM-2H', 'Temperature RM-4H',
+                                    'Solar Irradiance RM-2H', 'Solar Irradiance RM-4H', 'Power RStd-2H',
+                                    'Power RStd-4H', 'Temperature RStd-2H', 'Temperature RStd-4H',
+                                    'Solar Irradiance RStd-2H', 'Solar Irradiance RStd-4H', 'Power deriv1',
+                                    'Power deriv2']
 
     start_date=pd.to_datetime(start_date)
     end_date=pd.to_datetime(end_date)
@@ -115,29 +161,26 @@ def feature_selector(building, selected_features,selection_method,start_date = '
     mask = (df_select.index >= start_date) & (df_select.index <= end_date)
 
     df_select = df_select[mask]
-
-    # Can you perfrom feature selection with temp_C,  HR and 'windSpeed_m/s as feature and kBest-MI as selection method
-    # Can you perfrom feature selection all features possible and kBest-MI as selection method
-    # Can you perfrom feature selection all features possible and Random forest as selection method
-    # Can you perfrom feature selection all features possible and Random forest as selection method from 1st January 2019 to 3rd March 2019
-    # Can you perfrom feature selection all features possible and k_best f value as selection method from 1st January 2019 to 3rd March 2019 for the Central building
+    
     # Extract the data for plotting
     Y5 = np.array(selected_data.loc[:]['Power (kW)'])
     X5 = np.array(selected_data.loc[:][selected_features])
-
+    print('OK')
     if selection_method == 'kBest-F-Value':
-        features=SelectKBest(k=3,score_func=f_regression)
+        print('OK')
+        features=SelectKBest(k=nbest,score_func=f_regression)
         fit=features.fit(X5,Y5) #calculates the scores using the score_function f_regression of the features
         
         x = [i for i in range(len(fit.scores_))]
         x_best = [i for i in fit.get_support(indices=True)]
         scores = fit.scores_
         columns = np.array(df_select.columns)
+        print('OK')
 
         
     elif selection_method == 'kBest-MI':
   
-        features=SelectKBest(k=3,score_func=mutual_info_regression)
+        features=SelectKBest(k=nbest,score_func=mutual_info_regression)
         fit=features.fit(X5,Y5)
         
         x = [i for i in range(len(fit.scores_))]
@@ -148,50 +191,88 @@ def feature_selector(building, selected_features,selection_method,start_date = '
         
     elif selection_method == 'Forest-Regressor':
         model = RandomForestRegressor()
-        model.fit(X5, Y5)
+        model.  fit(X5, Y5)
         
         scores = model.feature_importances_
         x = [i for i in range(len(scores))]
-        y_best  = np.sort(scores)[-3:]
+        y_best  = np.sort(scores)[-nbest:]
         x_best=[]
         for i in range(len(scores)):
             for y in y_best:
                 if y==scores[i]:
                     x_best.append(i)
         columns = np.array(df_select.columns)
+
+    elif selection_method == 'RFE':
+        model=LinearRegression() # LinearRegression Model as Estimator
+        rfe=RFE(model,n_features_to_select=nbest)
+        fit=rfe.fit(X5,Y5)
         
+        # Get the indices of the selected features sorted by their ranking
+        selected_feature_indices = fit.get_support(indices=True)
+        feature_ranking = fit.ranking_
+
+        feature_ranking = [feature_ranking[i] for i in selected_feature_indices]
+        # Create a dictionary to store feature indices and their corresponding ranking
+        feature_ranking_dict = {}
+        for index, rank in zip(selected_feature_indices, feature_ranking):
+            feature_ranking_dict[index] = rank
+
+        # Sort the dictionary based on ranking
+        sorted_features = sorted(feature_ranking_dict.items(), key=lambda x: x[1])
+
+
     loading_output2 = None
     
     # Your plotting code here
     fig = None
     
     if selection_method:
+
+        if selection_method == 'RFE':
+            # Create a DataFrame from sorted features information
+            df_sorted_features = pd.DataFrame(sorted_features, columns=['Index', 'Rank'])
+            df_sorted_features['Best Features'] = df_select.columns[df_sorted_features['Index']]
+
+            # Drop the 'Index' column
+            df_sorted_features.drop(columns=['Index', 'Rank'], inplace=True)
+
+            # Create a Plotly table
+            table = go.Figure(data=[go.Table(
+                header=dict(values=["<b><span style='font-size:20px'>Best Features</span></b>"],
+                            fill_color='paleturquoise',
+                            align='left'),
+                cells=dict(values=[df_sorted_features['Best Features']],
+                        fill_color='lavender',
+                        align='left'))
+            ])
+
+            table.update_layout(width=800)  # Adjust the width here
+            # Save the table as an HTML file
+            #table.write_html("sorted_features_table.html")
+            return table
+
         # Create a bar plot
-        fig = go.Figure()
-        fig.add_trace(go.Bar(x=x, y=scores, name='All Features'))
-        fig.add_trace(go.Bar(x=x_best, y=scores[x_best], name='Best Features'))
-    
-        # Update layout
-        fig.update_layout(
-            title='With ' + selection_method  + ' score',
-            xaxis=dict(tickvals=x, ticktext=columns, tickangle=90),
-            yaxis=dict(type='log'),
-            barmode='overlay',
-            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
-            width = 600,
-            height = 500,
-        )
+
+        else:
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=x, y=scores, name='All Features', width=0.8))
+            fig.add_trace(go.Bar(x=x_best, y=scores[x_best], name='Best Features', width=0.8))
         
-    else:
-        # Display the loading spinner while the graph is being updated
-        loading_output2 = dbc.Spinner(
-            color="primary",
-            children="Loading...",
-            style={"position": "absolute", "top": "50%", "left": "50%", "transform": "translate(100%, 100%)"},
+            # Update layout
+            fig.update_layout(
+                title='With ' + selection_method  + ' score',
+                xaxis=dict(tickvals=x, ticktext=columns, tickangle=90),
+                yaxis=dict(type='log'),
+                barmode='overlay',
+                legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+                width = 600,
+                height = 500,
             )
-        
-    fig.write_html("selection.html")
-    return fig
+            #fig.write_html("selection.html")
+            return fig
+    print('SUCCESS')
+
 
 ###############################################################################################################
 
