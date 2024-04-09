@@ -12,7 +12,7 @@ tools = [
                         "description": "The selected options for plotting the graph",
                         "items": {
                             "type":'string',
-                            "enum":["Power (kW)","Temperature (C)","Humidity (%)","WindSpeed (m/s)",
+                            "enum":["Power (kW)","Temperature (C)","Humidity (%)",
                                 "Pressure (mbar)","SolarRad (W/m2)","rain (mm/h)", 'Power-1', 'Power-week',
                                 'Week Day', 'Month', 'Holiday', 'Holiday or Weekend', 'Power RM-2H',
                                 'Power RM-4H', 'Temperature RM-2H', 'Temperature RM-4H',
@@ -71,7 +71,7 @@ tools = [
                         "items": {
                             "type":'string',
                             "enum":['Temperature (C)',
-                                    'Humidity (%)', 'WindSpeed (m/s)', 'Pressure (mbar)', 'SolarRad (W/m2)',
+                                    'Humidity (%)', 'Pressure (mbar)', 'SolarRad (W/m2)',
                                     'rain (mm/h)', 'Power-1', 'Power-week', 'Hour', 'Hour sin', 'Hour cos',
                                     'Week Day', 'Month', 'Holiday', 'Holiday or Weekend', 'Power RM-2H',
                                     'Power RM-4H', 'Temperature RM-2H', 'Temperature RM-4H',
@@ -113,7 +113,7 @@ tools = [
                         "items": {
                             "type": "string",
                             "enum": ['Temperature (C)',
-                                'Humidity (%)', 'WindSpeed (m/s)', 'Pressure (mbar)', 'SolarRad (W/m2)',
+                                'Humidity (%)', 'Pressure (mbar)', 'SolarRad (W/m2)',
                                 'rain (mm/h)', 'Power-1', 'Power-week', 'Hour', 'Hour sin', 'Hour cos',
                                 'Week Day', 'Month', 'Holiday', 'Holiday or Weekend', 'Power RM-2H',
                                 'Power RM-4H', 'Temperature RM-2H', 'Temperature RM-4H',
