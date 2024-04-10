@@ -419,11 +419,11 @@ def model_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE','
     if exist_model:
 
         if selected_plot == 'time_series':
-            fig1.write_html("model_time_series.html")
+            #fig1.write_html("model_time_series.html")
             return fig1
 
         elif selected_plot == 'scater_plot':
-            fig2.write_html("model_scatter.html")
+            #fig2.write_html("model_scatter.html")
             return fig2
 
         elif selected_plot == 'table':
@@ -458,7 +458,7 @@ def model_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE','
                         align='left'))
             ])
 
-            table_figure.write_html("model_table.html")
+            #table_figure.write_html("model_table.html")
             return table_figure
     else:
         return "Please, start by creating a model."
@@ -470,11 +470,11 @@ def forecast_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE
     if exist_forecast:
 
         if selected_plot == 'time_series':
-            fig1_.write_html("forecast_time_series.html")
-            return fig1_,fig1_
+            #fig1_.write_html("forecast_time_series.html")
+            return fig1_
 
         elif selected_plot == 'scater_plot':
-            fig2_.write_html("forecast_scatter.html")
+            #fig2_.write_html("forecast_scatter.html")
             return fig2_
 
         elif selected_plot == 'table':
@@ -509,7 +509,7 @@ def forecast_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE
                         align='left'))
             ])
 
-            table_figure.write_html("forecast_table.html")
+            #table_figure.write_html("forecast_table.html")
             return table_figure
     
     else:
