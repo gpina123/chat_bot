@@ -223,4 +223,45 @@ tools = [
             },
         },
     },
+    {
+        "type":"function",
+        "function":{
+            "name":"get_consumption_now",
+            "description":"This function return the power comsumption at the moment at inside IST"
+        }
+    },
+    {
+        "type":"function",
+        "function":{
+            "name":"get_specific_value",
+            "description":"This function returns a specific value of a feature at a specific date.",
+            "parameters":{
+                "type":"object",
+                "properties": {
+                    "option": {
+                        "type": "string",
+                        "description": "The specific feature.",
+                        "enum":["Power (kW)","Temperature (C)","Humidity (%)","WindSpeed (m/s)",
+                                "Pressure (mbar)","SolarRad (W/m2)","rain (mm/h)", 'Power-1', 'Power-week',
+                                'Week Day', 'Month', 'Holiday', 'Holiday or Weekend', 'Power RM-2H',
+                                'Power RM-4H', 'Temperature RM-2H', 'Temperature RM-4H',
+                                'Solar Irradiance RM-2H', 'Solar Irradiance RM-4H', 'Power RStd-2H',
+                                'Power RStd-4H', 'Temperature RStd-2H', 'Temperature RStd-4H',
+                                'Solar Irradiance RStd-2H', 'Solar Irradiance RStd-4H', 'Power deriv1',
+                                'Power deriv2', 'Hour', 'Hour sin', 'Hour cos',]
+                    },
+                    "date": {
+                        "type": "string",
+                        "description": "The specific date. Should include year, month, day and hour. Otherwise ask the user to give the complete date.",
+                    },
+                    "building":{
+                        "type":"string",
+                        "description":"The building from where the data comes from.",
+                        "enum":["Central","Civil","South Tower","North Tower","IST"],
+                    },
+                },
+                "required": ["option","date","building"],
+            }
+        }
+    }
 ]
