@@ -38,7 +38,7 @@ tools = [
                     },
                     "building": {
                         "type": "string",
-                        "description": "The selected building for plotting the graph",
+                        "description": "The selected building where the data is taken from.",
                         "enum":["Central","Civil","South Tower","North Tower","IST"]
                     },
                     "num_bins": {
