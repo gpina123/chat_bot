@@ -33,7 +33,7 @@ tools = [
                     },
                     "type_graph": {
                         "type": "string",
-                        "enum": ["time_series","boxplot","histogram","table"],
+                        "enum": ["time_series","boxplot","histogram"],
                         "description": "The type of graph to plot. Only accept time series, boxplot and histogram. Other options are not available.",
                     },
                     "building": {
@@ -41,12 +41,72 @@ tools = [
                         "description": "The selected building where the data is taken from.",
                         "enum":["Central","Civil","South Tower","North Tower","IST"]
                     },
-                    "num_bins": {
-                        "type": "number",
-                        "description": "The number of bins the user wishes when he selects the histogram type of graph",
+                    "bins": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "default": 50,
+                        "description": "The number of bins for the histogram. Only mandatory if the type of graph selected is a histogram."
+                    }
+                },
+                "required": ["selected_options", "start_date", "end_date", "type_graph", "building"],
+                "dependencies": {
+                    "bins": {
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "type_graph": {"const": "histogram"}
+                                }
+                            },
+                            {
+                                "not": {
+                                    "required": ["bins"]
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+        }
+    },
+    {########################### STATISTICAL ANALYSIS
+    "type": "function",
+        "function":{
+            "name": "statistical_analysis",
+            "description": "Function that provides the statistical analysis in a table of the selected features over a given period. It includes the total count, the standard deviation, the minimum, the maximum, as well as lower, 50 and upper percentiles.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "selected_options": {
+                        "type": "array",
+                        "description": "The selected features for the statistical analysis.",
+                        "items": {
+                            "type":'string',
+                            "enum":["Power (kW)","Temperature (C)","Humidity (%)",
+                                "Pressure (mbar)","SolarRad (W/m2)","rain (mm/h)", 'Power-1', 'Power-week',
+                                'Week Day', 'Month', 'Holiday', 'Holiday or Weekend', 'Power RM-2H',
+                                'Power RM-4H', 'Temperature RM-2H', 'Temperature RM-4H',
+                                'Solar Irradiance RM-2H', 'Solar Irradiance RM-4H', 'Power RStd-2H',
+                                'Power RStd-4H', 'Temperature RStd-2H', 'Temperature RStd-4H',
+                                'Solar Irradiance RStd-2H', 'Solar Irradiance RStd-4H', 'Power deriv1',
+                                'Power deriv2', 'Hour', 'Hour sin', 'Hour cos',]
+                        }
+                    },
+                    
+                    "start_date": {
+                        "type": "string",
+                        "description": "The start date for the data range. It does not matter the format",
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "description": "The end date for the data range. It does not matter the format",
+                    },
+                    "building": {
+                        "type": "string",
+                        "description": "The selected building where the data is taken from.",
+                        "enum":["Central","Civil","South Tower","North Tower","IST"]
                     },
                 },
-                "required": ["selected_options", "start_date", "end_date", "type_graph", "building"]
+                "required": ["selected_options", "start_date", "end_date", "building"]
             },
         }
     },

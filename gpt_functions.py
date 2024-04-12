@@ -15,12 +15,13 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import BaggingRegressor
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import LinearRegression 
-
 import plotly.express as px
 
 import dash_bootstrap_components as dbc
 
-import gpt_interface
+from urllib.request import urlopen 
+import json 
+import exceptions
 
 ###############################################################################################################
 
@@ -31,26 +32,33 @@ all_data = all_data.set_index(['Building', 'Date'])
 exist_model = False
 exist_forecast = False
 
+def get_specific_value(option,date,building):
+    try:
+        date = pd.to_datetime(date)
+        
+        value = all_data[option].xs(building).loc[date]
+        return f"{value}"
+    except:
+        raise exceptions.InvalidDateException("invalid date")
+
 ###############################################################################################################
 
-def plot_graph(selected_options, start_date, end_date, type_graph, building, num_bins =50):
+def plot_graph(selected_options, start_date, end_date, type_graph, building, bins =50):
     start_date = pd.to_datetime(start_date)
     end_date = pd.to_datetime(end_date)
     
     #
     #Plot an histogram with 200 bins of the Civil building from April 2017 to April 2018 of the Power (kW) and the Temperature (C)
-    print('ENTREI')
     # Ensure selected_options is a list
     if not isinstance(selected_options, list):
         selected_options = [selected_options]
     
     # Extract the data for plotting
     selected_data = all_data.xs(building).loc[start_date:end_date]
-
+    
     #check if there is no content
     if selected_data.shape[0] == 0:
-        raise ValueError("invalid date")
-        
+        raise exceptions.InvalidDateException("invalid date")
     x_data = selected_data.index
     
     # Filter data based on selected building and options
@@ -73,7 +81,6 @@ def plot_graph(selected_options, start_date, end_date, type_graph, building, num
         
         # Create the figure
         fig = go.Figure(data=scatter_traces, layout=layout)
-        fig.write_html("time_series_plot.html")
         return fig
 
     elif "boxplot" in type_graph:
@@ -89,14 +96,13 @@ def plot_graph(selected_options, start_date, end_date, type_graph, building, num
         
         # Create the figure
         fig = go.Figure(data=boxplot_traces, layout=layout)
-        fig.write_html("boxplot_plot.html")
         return fig
         
     elif "histogram" in type_graph:
         # Create histogram traces for each selected option
         histogram_traces = []
         for option in selected_options:
-            histogram_trace = go.Histogram(x=y_data[option], name=option, nbinsx=num_bins)
+            histogram_trace = go.Histogram(x=y_data[option], name=option, nbinsx=bins)
             histogram_traces.append(histogram_trace)
         
         # Create layout
@@ -106,46 +112,55 @@ def plot_graph(selected_options, start_date, end_date, type_graph, building, num
         
         # Create the figure
         fig = go.Figure(data=histogram_traces, layout=layout)
-        fig.write_html("histogram_plot.html")
         return fig
-
-    elif "table" in type_graph:
-        # Initialize header and cell values
-        cell_values = []
-        
-        # Prepare table data for each selected option
-         # Prepare table data for each statistic
-        for statistic in selected_data[selected_options[0]].describe().index:
-            row_data = [statistic]
-            for option in selected_options:
-                stats = selected_data[option].describe()
-                value = round(stats.loc[statistic], 2)  # Round to 2 decimal places
-                row_data.append(value)
-            cell_values.append(row_data)
-        
-        # Transpose the cell_values to separate stats and option values
-        transposed_cell_values = [[row[i] for row in cell_values] for i in range(len(cell_values[0]))]
-        
-        # Create the table trace
-        table_trace = go.Table(header=dict(values=["Statistic"] + selected_options),
-                               cells=dict(values=transposed_cell_values))
-        
-        # Create the layout
-        layout_table = go.Layout(title=dict(text="Statistics Table", x=0.5))
-        
-        # Create the figure with the table trace
-        fig = go.Figure(data=table_trace, layout=layout_table)
-        fig.write_html("statistics_table.html")
-
-        print("Your statistics table is completed.")
-        return fig
-
+    
 ###############################################################################################################
-
+def statistical_analysis(selected_options, start_date, end_date, building):
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+    
+    if not isinstance(selected_options, list):
+        selected_options = [selected_options]
+    
+    # Extract the data for plotting
+    selected_data = all_data.xs(building).loc[start_date:end_date]
+    
+    #check if there is no content
+    
+    if selected_data.shape[0] == 0:
+        raise exceptions.InvalidDateException("invalid date")
+    
+    # Initialize header and cell values
+    cell_values = []
+    
+    # Prepare table data for each selected option
+        # Prepare table data for each statistic
+    for statistic in selected_data[selected_options[0]].describe().index:
+        row_data = [statistic]
+        for option in selected_options:
+            stats = selected_data[option].describe()
+            value = round(stats.loc[statistic], 2)  # Round to 2 decimal places
+            row_data.append(value)
+        cell_values.append(row_data)
+    
+    # Transpose the cell_values to separate stats and option values
+    transposed_cell_values = [[row[i] for row in cell_values] for i in range(len(cell_values[0]))]
+    
+    # Create the table trace
+    table_trace = go.Table(header=dict(values=["Statistic"] + selected_options),
+                            cells=dict(values=transposed_cell_values))
+    
+    # Create the layout
+    layout_table = go.Layout(title=dict(text="Statistics Table", x=0.5))
+    
+    # Create the figure with the table trace
+    fig = go.Figure(data=table_trace, layout=layout_table)
+    return fig
+    
+###############################################################################################################
 def feature_selector(building, selected_features,selection_method,nbest = 3, start_date = '2019-01-10',end_date ='2019-01-30'):
 
     if selected_features == 'all':
-        print('TRUE')
         selected_features = ['Temperature (C)',
                                     'Humidity (%)', 'WindSpeed (m/s)', 'Pressure (mbar)', 'SolarRad (W/m2)',
                                     'rain (mm/h)', 'Power-1', 'Power-week', 'Hour', 'Hour sin', 'Hour cos',
@@ -160,7 +175,10 @@ def feature_selector(building, selected_features,selection_method,nbest = 3, sta
     end_date=pd.to_datetime(end_date)
 
     selected_data = all_data.xs(building).loc[start_date:end_date]
-    print('feature_selector was called...')
+    
+    if selected_data.shape[0] == 0:
+        raise exceptions.InvalidDateException("invalid date")
+    
     df_select = selected_data[selected_features]
 
     mask = (df_select.index >= start_date) & (df_select.index <= end_date)
@@ -170,9 +188,7 @@ def feature_selector(building, selected_features,selection_method,nbest = 3, sta
     # Extract the data for plotting
     Y5 = np.array(selected_data.loc[:]['Power (kW)'])
     X5 = np.array(selected_data.loc[:][selected_features])
-    print('OK')
     if selection_method == 'kBest-F-Value':
-        print('OK')
         features=SelectKBest(k=nbest,score_func=f_regression)
         fit=features.fit(X5,Y5) #calculates the scores using the score_function f_regression of the features
         
@@ -180,7 +196,6 @@ def feature_selector(building, selected_features,selection_method,nbest = 3, sta
         x_best = [i for i in fit.get_support(indices=True)]
         scores = fit.scores_
         columns = np.array(df_select.columns)
-        print('OK')
 
         
     elif selection_method == 'kBest-MI':
@@ -226,10 +241,6 @@ def feature_selector(building, selected_features,selection_method,nbest = 3, sta
         # Sort the dictionary based on ranking
         sorted_features = sorted(feature_ranking_dict.items(), key=lambda x: x[1])
 
-
-    loading_output2 = None
-    
-    # Your plotting code here
     fig = None
     
     if selection_method:
@@ -253,8 +264,6 @@ def feature_selector(building, selected_features,selection_method,nbest = 3, sta
             ])
 
             table.update_layout(width=800)  # Adjust the width here
-            # Save the table as an HTML file
-            #table.write_html("sorted_features_table.html")
             return table
 
         # Create a bar plot
@@ -274,10 +283,7 @@ def feature_selector(building, selected_features,selection_method,nbest = 3, sta
                 width = 600,
                 height = 500,
             )
-            #fig.write_html("selection.html")
             return fig
-    print('SUCCESS')
-
 
 ###############################################################################################################
 
@@ -296,6 +302,9 @@ def create_regression_model(selected_features,start_date,end_date,type_model = "
     end_date=pd.to_datetime(end_date)
 
     selected_data = all_data.xs(selected_building)
+    
+    if selected_data.shape[0] == 0:
+        raise exceptions.InvalidDateException("invalid date")
     
     # Extract the data
     Y = selected_data.loc[start_date:end_date]["Power (kW)"].values
@@ -383,6 +392,9 @@ def forecast(start_date,end_date):
         end_date=pd.to_datetime(end_date)
 
         selected_data = all_data.xs(building)
+        
+        if selected_data.shape[0] == 0:
+            raise exceptions.InvalidDateException("invalid date")
 
         # Extract the data
         Y = selected_data.loc[start_date:end_date]["Power (kW)"].values
@@ -407,10 +419,10 @@ def forecast(start_date,end_date):
         cvRMSE_=RMSE_/np.mean(Y)
         NMBE_=MBE_/np.mean(Y)
 
-        return "The energy consumption forecast is ready!"
+        #return "The energy consumption forecast is ready!"
     
     else:
-        return "Please, start by creating a model."
+        raise exceptions.CreateModelException("create model")
 
 #############################################################################################################
 
@@ -419,11 +431,9 @@ def model_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE','
     if exist_model:
 
         if selected_plot == 'time_series':
-            #fig1.write_html("model_time_series.html")
             return fig1
 
         elif selected_plot == 'scater_plot':
-            #fig2.write_html("model_scatter.html")
             return fig2
 
         elif selected_plot == 'table':
@@ -458,10 +468,9 @@ def model_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE','
                         align='left'))
             ])
 
-            #table_figure.write_html("model_table.html")
             return table_figure
     else:
-        return "Please, start by creating a model."
+        raise exceptions.CreateModelException("create model")
 
 #############################################################################################################
 
@@ -470,11 +479,9 @@ def forecast_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE
     if exist_forecast:
 
         if selected_plot == 'time_series':
-            #fig1_.write_html("forecast_time_series.html")
             return fig1_
 
         elif selected_plot == 'scater_plot':
-            #fig2_.write_html("forecast_scatter.html")
             return fig2_
 
         elif selected_plot == 'table':
@@ -509,8 +516,21 @@ def forecast_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE
                         align='left'))
             ])
 
-            #table_figure.write_html("forecast_table.html")
             return table_figure
     
     else:
-        return "Please, start by using the forecast model."
+        raise exceptions.CreateForecastException("create forecast model")
+    
+def get_consumption_now():
+    # store the URL in url as 
+    # parameter for urlopen 
+    url = "https://api.eot.pt/api/pulse/last/power?key=4787F1QSP6QUEOQZ"
+
+    # store the response of URL 
+    response = urlopen(url) 
+
+    # storing the JSON response 
+    # from url in data 
+    data_json = json.loads(response.read()) 
+
+    return f"{data_json}"
