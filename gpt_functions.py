@@ -467,6 +467,11 @@ def model_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE','
                         fill_color='lavender',
                         align='left'))
             ])
+            # Set the background color of the table container
+            table_figure.update_layout({
+                "margin":{"l":10,"r":10,"t":10,"b":10},
+                "height": 200  # Adjust the height of the table as needed
+            })
 
             return table_figure
     else:
@@ -515,6 +520,11 @@ def forecast_plots(selected_plot = 'time_series', selected_metrics = ['MAE','MBE
                         fill_color='lavender',
                         align='left'))
             ])
+            # Set the background color of the table container
+            table_figure.update_layout({
+                "margin":{"l":10,"r":10,"t":10,"b":10},
+                "height": 200  # Adjust the height of the table as needed
+            })
 
             return table_figure
     
