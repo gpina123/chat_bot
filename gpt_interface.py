@@ -16,8 +16,10 @@ external_stylesheets = [
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
 ]
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
+history=[]
+condition=False
 
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 
 # Footer
 footer = html.Footer(className='w3-container w3-black w3-padding-64 w3-center w3-opacity', children=[
@@ -31,7 +33,7 @@ header = html.Header(className='w3-container w3-center', style={'padding': '128p
 ])
 
 # Chatbot Layout
-chatbot_layout = html.Div(id='link2', className='w3-row-padding w3-light-grey w3-padding-64 w3-container', children=[
+chatbot_layout = html.Div(className='w3-row-padding w3-light-grey w3-padding-64 w3-container', children=[
     html.Div(className='w3-content', children=[
         html.Div([
             html.Div(id='output_from_gpt',style={"padding-bottom":"10px"}),
@@ -129,7 +131,7 @@ help_layout = html.Div(children=[
     ]),
 
 app.layout = html.Div([
-    ################################################ MENU ################################################
+    # Menu
     html.Div(className='w3-top', style={'background-color': '#009DE0'}, children=[
         html.Div(className='w3-bar w3-card w3-left-align w3-large', children=[
             html.Button(className='w3-bar-item w3-button w3-hide-medium w3-hide-large w3-right w3-padding-large w3-hover-white w3-large',
@@ -144,18 +146,18 @@ app.layout = html.Div([
             html.A(className='w3-bar-item w3-button w3-padding-large', href='/help', children='Help'),
         ])
     ]),
-
     # Header
     header,
-
     # Content will be rendered based on the URL
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-content'),
-
+    # Footer
     footer
 ])
 
-########################################## Buttons
+##########################################################################
+
+########################################## 
 @app.callback(
     Output('navDemo', 'className'),
     [Input('menu-button', 'n_clicks')],
@@ -168,7 +170,6 @@ def toggle_navbar(n_clicks):
         return 'w3-bar-block w3-white w3-hide w3-large'
 
 ########################################
-
 @app.callback(
     Output('page-content', 'children'),
     [Input('url', 'pathname')],
@@ -177,10 +178,20 @@ def display_page(pathname):
     if pathname == '/help':
         return help_layout
     else:
-        return chatbot_layout
+        if condition:
+            # Create a new layout by appending the chat history to the chatbot_layout
+            updated_chatbot_layout = html.Div([
+                html.Div(id='chat-history', className='w3-row-padding w3-light-grey w3-padding-64 w3-container', children=[
+                    html.Div(className='w3-content', children=[
+                        html.Div(history)# Add chat history here
+                        ])
+                    ]),  
+                chatbot_layout
+            ])
+        else: updated_chatbot_layout = chatbot_layout
+        return updated_chatbot_layout
 
 ##########################################
-
 @app.callback(
     [Output('output_from_gpt', 'children'),
      Output("loading_button","style"),
@@ -190,6 +201,8 @@ def display_page(pathname):
     prevent_initial_call=True
 )
 def update_output(n_clicks, value):
+    global condition
+    condition = True
     if n_clicks is None:
         return ''
     else:
@@ -205,12 +218,20 @@ def update_output(n_clicks, value):
             display = html.Div([html.Div([html.B("[Output]"),html.Div(f'{output["text_response"]}')]),
                                 dcc.Graph(figure=function_response)])
         
-        return html.Div([
+        if f"{value}"=="":display = html.Div([html.B("[Output]"),html.Div('')])
+
+        chat = html.Div([
                 html.Div([html.B("[Input]"),html.Div(f"{value}")]),
                 display,
                 html.Div(id="output_from_gpt",style={"padding-bottom":"10px"})
-                ],style={"padding-top":"10px"}),{"display":"None"},""
+                ],style={"padding-top":"10px"})
         
+        history.append(chat)
+        print(history)
+        
+        return chat,{"display":"None"},""
+        
+##########################################
 @app.callback(Output("loading_button","style",allow_duplicate=True),
               Input("button", "n_clicks"),
               prevent_initial_call=True)
@@ -218,5 +239,7 @@ def appear_loading_button(n_clicks):
     if n_clicks:
         return {}       
         
+##########################################
+
 if __name__ == '__main__':
     app.run_server(debug=True)
