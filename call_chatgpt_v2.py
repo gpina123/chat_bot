@@ -15,7 +15,7 @@ import exceptions
 
 #GPT_MODEL = "gpt-3.5-turbo-0613"
 
-#client = OpenAI(api_key = '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')
+#client = OpenAI(api_key = '')
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 GPT_MODEL = "gpt-3.5-turbo-0613"
