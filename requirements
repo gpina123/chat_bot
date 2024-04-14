@@ -1,0 +1,12 @@
+dash
+dash-bootstrap-components
+dash-mantine-components
+plotly
+pandas
+numpy
+scikit-learn
+matplotlib
+gpt-functions
+tools
+openai
+urllib3
