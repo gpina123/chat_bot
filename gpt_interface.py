@@ -20,6 +20,7 @@ history=[]
 condition=False
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
+server=app.server
 
 # Footer
 footer = html.Footer(className='w3-container w3-black w3-padding-64 w3-center w3-opacity', children=[
