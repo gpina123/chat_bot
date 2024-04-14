@@ -25,7 +25,10 @@ import exceptions
 
 ###############################################################################################################
 
-all_data = pd.read_csv('All_data4.csv')
+first_half = pd.read_csv('first_half.csv')
+second_half = pd.read_csv('second_half.csv')
+all_data = pd.concat([first_half, second_half], ignore_index=True)
+#all_data = pd.read_csv('All_data4.csv')
 all_data["Date"]=pd.to_datetime(all_data["Date"], format="%Y-%m-%d %H:%M:%S")
 all_data = all_data.set_index(['Building', 'Date'])
 
